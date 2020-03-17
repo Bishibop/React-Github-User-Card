@@ -1,5 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
+import axios from 'axios'
+
+import Search from './Search';
 
 const StyledUser = styled.div`
   width: 70%;
@@ -24,29 +27,66 @@ const StyledFollower = styled.div`
 `
 
 class UserCard extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      user: {},
+      followers: []
+    }
+  }
+
+  componentDidMount() {
+    this.getUserData('bishibop');
+  }
+
+  getUserData = login => {
+    axios.get(`https://api.github.com/users/${login}`).then(response => {
+      this.setState({
+        user: response.data
+      });
+    });
+    axios.get(`https://api.github.com/users/${login}/followers`)
+      .then(response => {
+        console.log('followers: ', response.data);
+        this.setState({
+          followers: response.data
+        });
+    });
+  }
+
+  searchGithub = (query) => {
+    console.log('searching github: ', query);
+    axios.get(`https://api.github.com/search/users?q=${query}`)
+      .then(response => {
+        console.log('search results: ', response.data);
+        this.getUserData(response.data.items[0].login);
+    });
+  }
 
   render() {
     return (
-      <StyledUser className="user-card">
-        <h2>{this.props.user.login}</h2>
-        <StyledProfile src={this.props.user.avatar_url} alt="avatar" />
-        <p>Name: {this.props.user.name}</p>
-        <p>Bio: {this.props.user.bio}</p>
-        <p>Location: {this.props.user.location}</p>
-        <div><a href={this.props.user.html_url}>Profile Page</a></div>
-        <div><a href={this.props.user.repos_url}>Repos</a></div>
-        <h3>Followers:</h3>
-        <div className='followers'>
-          {this.props.followers.map(follower => (
-            <StyledFollower key={follower.id} className='follower'>
-              <h3>{follower.login}</h3>
-              <StyledProfile src={follower.avatar_url} alt="avatar" />
-              <div><a href={follower.repos_url}>Repos</a></div>
-            </StyledFollower>
-          ))}
-        </div>
-      </StyledUser>
-
+      <>
+        <StyledUser className="user-card">
+          <Search searchGithub={this.searchGithub}/>
+          <h2>{this.state.user.login}</h2>
+          <StyledProfile src={this.state.user.avatar_url} alt="avatar" />
+          <p>Name: {this.state.user.name}</p>
+          <p>Bio: {this.state.user.bio}</p>
+          <p>Location: {this.state.user.location}</p>
+          <div><a href={this.state.user.html_url}>Profile Page</a></div>
+          <div><a href={this.state.user.repos_url}>Repos</a></div>
+          <h3>Followers:</h3>
+          <div className='followers'>
+            {this.state.followers.map(follower => (
+              <StyledFollower key={follower.id} className='follower'>
+                <h3>{follower.login}</h3>
+                <StyledProfile src={follower.avatar_url} alt="avatar" />
+                <div><a href={follower.repos_url}>Repos</a></div>
+              </StyledFollower>
+            ))}
+          </div>
+        </StyledUser>
+      </>
     );
   }
 }
